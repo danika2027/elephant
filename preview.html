@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐘 有一头小象在走向你 - 效果预览</title>
+<style>
+  :root {
+    --warm: #E8A87C; --bg: #FDF6F0; --text: #3C3C3C;
+    --sub: #8B8B8B; --card: #FFFBF6; --divider: #E8D5C4;
+    --green: #7CB342;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;
+    background: #F0E8DD; display:flex; justify-content:center;
+    align-items:center; min-height:100vh; padding:20px;
+  }
+
+  /* 手机外壳 */
+  .phone {
+    width: 390px; height: 844px; background: var(--bg);
+    border-radius: 44px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25), 0 0 0 2px #222;
+    display: flex; flex-direction: column; position: relative;
+  }
+  .screen { flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative; }
+
+  /* 状态栏 */
+  .status-bar {
+    display:flex; justify-content:space-between; padding:14px 28px 0;
+    font-size:12px; font-weight:600; color:var(--text);
+  }
+
+  /* 主内容区 */
+  .content {
+    flex:1; overflow-y:auto; padding: 0 24px;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .content::-webkit-scrollbar { display:none; }
+
+  /* 头部 */
+  .header { padding-top: 12px; }
+  .header .tag { font-size:12px; color:var(--warm); font-weight:500; margin-bottom:6px; }
+  .header .day-title { font-size:26px; font-weight:600; color:var(--text); }
+  .header .date { font-size:13px; color:var(--sub); margin-top:2px; }
+  .location-row { display:flex; align-items:center; gap:6px; margin-top:14px; }
+  .location-row .loc { font-size:17px; font-weight:500; color:var(--text); }
+  .dist { font-size:13px; color:var(--sub); margin-top:2px; }
+
+  /* 进度条 */
+  .progress-section { margin-top: 16px; }
+  .progress-labels { display:flex; justify-content:space-between; font-size:11px; color:var(--sub); }
+  .progress-bar-bg { height:4px; background:var(--divider); border-radius:2px; margin-top:4px; overflow:hidden; }
+  .progress-bar-fill { height:100%; background:var(--warm); border-radius:2px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+
+  /* 日期导航 */
+  .day-nav { display:flex; justify-content:center; align-items:center; gap:10px; margin-top:12px; }
+  .day-nav .arrow {
+    width:30px; height:30px; border-radius:50%; border:1px solid var(--divider);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--warm); font-size:14px;
+    background:var(--card); transition: all .2s;
+  }
+  .day-nav .arrow:active { background:var(--warm); color:#fff; }
+  .day-nav .arrow.disabled { opacity:.3; pointer-events:none; }
+  .day-nav .indicator {
+    padding:5px 14px; border-radius:20px; background:var(--card);
+    border:1px solid var(--divider); font-size:13px; font-weight:600; color:var(--text);
+  }
+
+  /* 到达横幅 */
+  .arrival-banner {
+    margin-top:14px; padding:12px 14px; border-radius:14px;
+    background: rgba(232,168,124,.15); border:1px solid rgba(232,168,124,.3);
+    display:flex; align-items:center; gap:10px;
+    opacity:0; transform:translateY(-10px);
+    transition: all .4s cubic-bezier(.4,0,.2,1);
+  }
+  .arrival-banner.show { opacity:1; transform:translateY(0); }
+  .arrival-banner .icon { font-size:26px; }
+  .arrival-banner .title { font-size:15px; font-weight:600; color:var(--warm); }
+  .arrival-banner .sub { font-size:12px; color:var(--sub); }
+
+  /* 消息卡片 */
+  .msg-card {
+    background:var(--card); border-radius:16px; padding:16px 18px; margin-top:10px;
+    opacity:0; transform:translateY(16px);
+    transition: all .4s cubic-bezier(.4,0,.2,1);
+  }
+  .msg-card.show { opacity:1; transform:translateY(0); }
+  .msg-card .tag-row { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+  .msg-card .tag-row .emoji { font-size:15px; }
+  .msg-card .tag-row .label { font-size:11px; color:var(--warm); font-weight:600; }
+  .msg-card .tag-row .loc { font-size:11px; color:var(--sub); }
+  .msg-card .body { font-size:15px; line-height:1.9; color:var(--text); white-space:pre-line; }
+  .msg-card .sign { text-align:right; font-size:13px; color:var(--sub); font-style:italic; margin-top:4px; }
+  .msg-card .divider { height:1px; background:var(--divider); margin-top:10px; opacity:.5; }
+
+  /* 底部提示 */
+  .hint { text-align:center; font-size:11px; color:var(--sub); margin:16px 0 20px;
+    opacity:0; transition: opacity .5s; }
+  .hint.show { opacity:1; }
+
+  /* 底部按钮 */
+  .bottom-bar {
+    padding: 8px 24px 24px; background:var(--bg);
+    box-shadow: 0 -2px 8px rgba(232,213,196,.5);
+    display:flex; gap:10px;
+  }
+  .btn {
+    flex:1; height:50px; border-radius:24px; border:none;
+    font-size:16px; font-weight:500; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    transition: all .2s;
+  }
+  .btn-primary { background:var(--warm); color:#fff; }
+  .btn-primary:active { opacity:.85; transform:scale(.98); }
+  .btn-secondary { background:var(--card); color:var(--text); border:1px solid var(--divider); }
+
+  /* ======== 地图屏幕 ======== */
+  .map-screen { display:none; }
+  .map-screen.active { display:flex; flex-direction:column; }
+  .home-screen { display:flex; flex-direction:column; flex:1; }
+  .home-screen.hidden { display:none; }
+
+  .map-container {
+    flex:1; background: #e8e4df; position:relative; overflow:hidden;
+    background-image:
+      radial-gradient(circle at 20% 70%, rgba(232,168,124,.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 25%, rgba(124,179,66,.1) 0%, transparent 40%);
+  }
+
+  /* 伪地图路线 */
+  .map-route-svg { position:absolute; inset:0; }
+  .map-top-bar {
+    position:absolute; top:0; left:0; right:0; padding:16px;
+    display:flex; align-items:center; gap:10px; z-index:2;
+  }
+  .map-back {
+    width:38px; height:38px; border-radius:50%; background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow: 0 2px 6px rgba(0,0,0,.1); font-size:16px;
+  }
+  .map-title-card {
+    flex:1; padding:10px 14px; border-radius:20px; background:#fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,.08); font-size:13px; font-weight:600;
+    display:flex; align-items:center; gap:6px;
+  }
+  .map-legend {
+    position:absolute; top:90px; right:16px; background:rgba(255,255,255,.92);
+    padding:8px 12px; border-radius:8px; font-size:11px; color:var(--sub);
+    box-shadow: 0 1px 4px rgba(0,0,0,.06); z-index:2;
+  }
+  .map-legend .leg-row { display:flex; align-items:center; gap:6px; margin:2px 0; }
+  .map-legend .leg-line { width:16px; height:3px; border-radius:1px; }
+  .map-legend .leg-dash { width:16px; height:0; border-top:1.5px dashed #bdbdbd; }
+
+  .map-bottom {
+    padding:14px 16px; background:#fff; border-radius:20px 20px 0 0;
+    box-shadow: 0 -4px 12px rgba(0,0,0,.08);
+  }
+  .map-stats { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+  .map-stat { text-align:center; min-width:50px; }
+  .map-stat .val { font-size:18px; font-weight:700; color:var(--text); }
+  .map-stat .lbl { font-size:10px; color:var(--sub); }
+  .map-mini-progress { flex:1; height:6px; background:var(--divider); border-radius:3px; overflow:hidden; }
+  .map-mini-progress .fill { height:100%; background:var(--warm); border-radius:3px; }
+  .map-return-btn {
+    width:100%; height:44px; border-radius:22px; border:none;
+    background:var(--warm); color:#fff; font-size:15px; cursor:pointer;
+  }
+
+  /* 小象脉冲 */
+  @keyframes pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.08); } }
+  .pulse { animation: pulse 2.4s ease-in-out infinite; display:inline-block; }
+
+  /* 锁定页 */
+  .locked-page {
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:center; flex:1; text-align:center; padding:20px;
+    color:var(--sub);
+  }
+  .locked-page .icon { font-size:56px; margin-bottom:16px; opacity:.7; }
+  .locked-page .day { font-size:16px; margin-bottom:6px; }
+  .locked-page .msg { font-size:13px; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+  <!-- 状态栏 -->
+  <div class="status-bar"><span>9:41</span><span>📶 🔋</span></div>
+
+  <!-- ===== 主屏幕 ===== -->
+  <div class="home-screen" id="homeScreen">
+    <div class="content" id="homeContent"></div>
+    <div class="bottom-bar">
+      <button class="btn btn-secondary" onclick="prevDay()">◀</button>
+      <button class="btn btn-primary" onclick="openMap()">🗺️ 查看地图</button>
+      <button class="btn btn-secondary" onclick="nextDay()">▶</button>
+    </div>
+  </div>
+
+  <!-- ===== 地图屏幕 ===== -->
+  <div class="map-screen" id="mapScreen">
+    <div class="map-container" id="mapContainer">
+      <canvas id="mapCanvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <div class="map-top-bar">
+        <div class="map-back" onclick="closeMap()">←</div>
+        <div class="map-title-card" id="mapTitle">🐘 第4天 · 宾州镇</div>
+      </div>
+      <div class="map-legend">
+        <div class="leg-row"><div class="leg-line" style="background:var(--warm);"></div> 已走过</div>
+        <div class="leg-row"><div class="leg-dash"></div> 未走过</div>
+      </div>
+    </div>
+    <div class="map-bottom">
+      <div class="map-stats">
+        <div class="map-stat"><div class="val" id="mapTraveled">115km</div><div class="lbl">已走</div></div>
+        <div class="map-mini-progress"><div class="fill" id="mapProgressFill" style="width:40%;"></div></div>
+        <div class="map-stat"><div class="val" id="mapRemaining">265km</div><div class="lbl">剩余</div></div>
+      </div>
+      <button class="map-return-btn" onclick="closeMap()">← 返回首页</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ 数据 ============
+const TOTAL_DAYS = 10, TOTAL_KM = 380;
+// 路线坐标（归一化到画布）—— 模拟南宁→桂林的蜿蜒路线
+const routePoints = [
+  {x:0.08,y:0.90, name:'南宁'},  {x:0.10,y:0.82, name:'三塘'},
+  {x:0.18,y:0.75, name:'昆仑'},  {x:0.25,y:0.68, name:'思陇'},
+  {x:0.30,y:0.55, name:'宾州'},  {x:0.42,y:0.48, name:'邹圩'},
+  {x:0.52,y:0.42, name:'迁江'},  {x:0.58,y:0.35, name:'来宾'},
+  {x:0.68,y:0.28, name:'穿山'},  {x:0.82,y:0.18, name:'鹿寨'},
+  {x:0.92,y:0.08, name:'桂林'}
+];
+
+const messages = {
+  1:[
+    {emoji:'🌅',label:'晨间出发',loc:'南宁·民族大道',
+     body:'今天是个大日子。\n\n你醒了吗？我醒了。天还没全亮，南宁的街上已经有人在走了。他们走得很快，不知道在赶什么。\n\n我不赶。但我也有要去的方向。\n\n我现在站在民族大道上，会展中心那个"大蘑菇"在后面看着我。我深吸了一口气。\n\n走了。',sign:'——你的小象'},
+    {emoji:'🚶',label:'路途见闻',loc:'昆仑大道·近三塘',
+     body:'出城了。路边是大片大片的甘蔗地，风一吹，沙沙沙的。\n\n你见过甘蔗地吗？比人还高，站在里面会迷路的。\n\n路边有个卖沃柑的阿婆，看到我愣了一下。她没有跑，而是笑了——那种"哎呀你真大"的笑。她塞给我两个沃柑，我没有手，她把塑料袋挂在我牙上了。\n\n你如果在的话，我会分你一个。',sign:'——你的小象'},
+    {emoji:'🌙',label:'傍晚安顿',loc:'三塘镇·大榕树下',
+     body:'我找了一棵大榕树靠着坐下来。\n\n榕树的须根垂下来，正好挠到我后背——对，就那个我够不着的地方。舒服。\n\n今天走了二十五公里。不多，但第一天嘛。\n\n我想问你好多问题：你今天中午吃了什么？你那里天气好吗？你下班的时候累不累？\n\n等我就好。我在路上了。',sign:'——你的小象'}
+  ],
+  4:[
+    {emoji:'🌅',label:'晨间出发',loc:'思陇镇·稻田边',
+     body:'早上踩到田埂上，差点滑进水田。\n\n我已经是一只成熟的小象了，不该犯这种错误。但我还是犯了。\n\n田里的鹭鸶看了我一眼，然后继续站在牛背上发呆。我突然想到一个问题：鹭鸶站在牛背上，那我可不可以让鹭鸶也站在我背上？\n\n下次问问它。',sign:'——你的小象'},
+    {emoji:'🚶',label:'路途见闻',loc:'宾州镇·宾阳县城',
+     body:'到宾阳县城了！这里好热闹。\n\n我走在街上，有个小孩指着我说："妈妈你看，小象！"\n\n我很想跟他说：不是小象，是一头正在走向你的小象。\n\n宾阳的酸粉确实好吃。酸酸甜甜的，里面还有脆脆的东西。我不知道那个脆脆的东西叫什么，但很好嚼。你在的城市有什么好吃的？等见面了你告诉我。',sign:'——你的小象'},
+    {emoji:'🌙',label:'傍晚安顿',loc:'宾州镇·老街',
+     body:'晚上住在宾阳老街上。老街的石板路坑坑洼洼的，但很舒服——可能是因为我的脚也是坑坑洼洼的。\n\n有个老爷爷坐在门口抽烟斗，看到我，问："你从哪来的？"我说："南宁。"他说："那走了好几天了吧。"我说："四天了。"\n\n他想了想，说："那你走得不快。"\n\n对，我走得不快。但我在走了。',sign:'——你的小象'}
+  ],
+  7:[
+    {emoji:'🌅',label:'晨间出发',loc:'迁江镇·玉米地边',
+     body:'今天是个阴天。云压得很低，像是有什么话要说，但一直忍着。\n\n我的心情也有点沉。不是不好的那种沉，是那种——走了七天了，开始想很多事的感觉。\n\n你可能也有过这种时候吧。在路上走着走着，突然开始想一些很大的问题。\n\n我想说的是：有意义。一头小象从南宁走向桂林，也许改变不了世界。但这头小象每天给你写日记——这个理由就够了。',sign:'——你的小象'},
+    {emoji:'🚶',label:'路途见闻',loc:'来宾市区·红水河大桥',
+     body:'到来宾了！来宾是个城市，有高楼，有红绿灯。\n\n我过红绿灯的时候有点紧张。绿灯亮了，我走到一半就变红了。\n\n所有的车都在等我。没有一辆按喇叭。\n\n也谢谢你。在这个什么都"立即送达"的时代，你选择了一个需要等十天的东西。我觉得这很了不起。',sign:'——你的小象'},
+    {emoji:'🌙',label:'傍晚安顿',loc:'来宾市区·城郊公园',
+     body:'今晚住在来宾城郊的一个小公园里。有人在跳广场舞，音乐很响。\n\n我试着跟着节奏晃了晃身体。不太行。但我耳朵跟着扇了几下。这算跳舞吗？\n\n走了七天。一百八十五公里。差不多一半了。\n\n"一半"是一个很特别的词。它说明你已经走了很远，但前面还有风景。\n\n而我在你的一半里走着。',sign:'——你的小象'}
+  ],
+  10:[
+    {emoji:'🌅',label:'晨间出发',loc:'鹿寨镇·最后一天',
+     body:'今天是最后一天。\n\n我起得特别早。天还没亮，星星还在。\n\n心里有点奇怪。我应该高兴才对——马上就到了，马上就能见到你了。但我也有点舍不得。\n\n这十天，每一天都慢悠悠的，每一天都在路上。我在路上想你，在路上看风景，在路上替你闻世界。\n\n"在路上"的感觉，其实很好。但到了之后，我们会有新的可能。\n\n出发，最后一次了。',sign:'——你的小象'},
+    {emoji:'🚶',label:'路途见闻',loc:'永福→临桂→接近桂林',
+     body:'过了永福，过了两江，开始闻到桂林的味道了。\n\n桂林的山跟别处都不一样。它们是一根一根从地里冒出来的，像有人在地底下插了很多竹笋，只露出一个尖。\n\n路边有个导游在跟游客说："桂林山水甲天下。"我不懂什么是"甲天下"，但我很同意。\n\n我的四只脚踩在桂林的土地上了。每一步都在靠近。我走得很慢，比任何一天都慢。因为期待本身，就是最好的礼物。',sign:'——你的小象'},
+    {emoji:'🌙',label:'傍晚安顿',loc:'桂林·象鼻山前',
+     body:'我到了。\n\n不对，是——我到了？\n\n站在象鼻山前面，看着那个跟我有点像的山。原来桂林也有一头小象——只不过它一直在这里，从来不走。\n\n而我走了十天，三百八十公里。\n\n这十天，谢谢你让我替你看了甘蔗地、红水河、昆仑关、桂林的山。下一次你想让我走向哪里？不用现在告诉我。你慢慢想。\n\n反正——我哪儿也不去了。',sign:'——你的小象'}
+  ]
+};
+
+// 为没有自定义消息的天数生成占位（用第4天的结构化模板）
+const dayMeta = [
+  {dep:'南宁兴宁区', dest:'三塘镇', dist:'~25km', lodge:'三塘镇·大榕树下'},
+  {dep:'三塘镇', dest:'昆仑镇', dist:'~30km', lodge:'昆仑镇·米粉店门口'},
+  {dep:'昆仑镇', dest:'思陇镇', dist:'~30km', lodge:'思陇镇·山脚田埂'},
+  {dep:'思陇镇', dest:'宾州镇', dist:'~30km', lodge:'宾州镇·老街'},
+  {dep:'宾州镇', dest:'邹圩镇', dist:'~35km', lodge:'邹圩镇·红水河渡口'},
+  {dep:'邹圩镇', dest:'迁江镇', dist:'~35km', lodge:'迁江镇·清水河边'},
+  {dep:'迁江镇', dest:'来宾市区', dist:'~40km', lodge:'来宾·城郊公园'},
+  {dep:'来宾市区', dest:'穿山镇', dist:'~40km', lodge:'穿山镇·杨树下'},
+  {dep:'穿山镇', dest:'鹿寨镇', dist:'~45km', lodge:'鹿寨镇·香桥附近'},
+  {dep:'鹿寨镇', dest:'桂林市区', dist:'~70km', lodge:'桂林·象鼻山前'},
+];
+
+function getMessages(day) {
+  if (messages[day]) return messages[day];
+  const m = dayMeta[day-1];
+  return [
+    {emoji:'🌅',label:'晨间出发',loc:m.dep,
+     body:`第${day}天的清晨。\n\n小象从${m.dep}出发了。今天的雾气有点大，但小象的心情很好。它哼着只有自己听得见的歌，一步一步走向${m.dest}。\n\n你在做什么呢？吃早饭了吗？`,sign:'——你的小象'},
+    {emoji:'🚶',label:'路途见闻',loc:`${m.dest}附近`,
+     body:`走在去${m.dest}的路上。\n\n路边的风景一天一个样。有时候是山，有时候是河，有时候只是一条很长很长的路。\n\n今天遇到一朵开在路边的野花，紫色的，很小。小象停下来看了它一会儿。\n\n它想：如果我是一朵花，你会停下来看我吗？`,sign:'——你的小象'},
+    {emoji:'🌙',label:'傍晚安顿',loc:m.lodge,
+     body:`到了${m.dest}。今晚住在${m.lodge}。\n\n今天的${m.dist}走完了。小象的四条腿都有点酸，但心里很满足。\n\n因为每走一步，就离你近一步。\n\n晚安。`,sign:'——你的小象'}
+  ];
+}
+
+// ============ 状态 ============
+let currentDay = 4; // 模拟第4天
+let hasArrived = false;
+let mapOpen = false;
+
+// ============ 渲染主页 ============
+function renderHome() {
+  const container = document.getElementById('homeContent');
+  const now = new Date();
+  const weekDays = ['周日','周一','周二','周三','周四','周五','周六'];
+  const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${weekDays[now.getDay()]}`;
+  const meta = dayMeta[currentDay-1];
+  const traveledKm = dayMeta.slice(0, currentDay).reduce((s,d)=>s+parseInt(d.dist),0);
+  const progress = currentDay / TOTAL_DAYS;
+  const msgs = getMessages(currentDay);
+
+  let html = `
+    <div class="header">
+      <div class="tag"><span class="pulse">🐘</span> 有一头小象在走向你</div>
+      <div class="day-title">${currentDay===10 ? '旅程完成 ✨' : '第 '+currentDay+' 天'}</div>
+      <div class="date">${dateStr}</div>
+      <div class="location-row">
+        <span style="font-size:15px;color:var(--warm)">📍</span>
+        <span class="loc">${meta.dest}</span>
+      </div>
+      <div class="dist">${meta.dist} · 累计 ${TOTAL_KM}km</div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-labels"><span>南宁</span><span style="color:var(--warm);font-weight:600">${Math.round(progress*100)}%</span><span>桂林</span></div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress*100}%"></div></div>
+    </div>
+
+    <div class="day-nav">
+      <div class="arrow ${currentDay<=1?'disabled':''}" onclick="prevDay()">◀</div>
+      <div class="indicator">${String(currentDay).padStart(2,'0')} / ${TOTAL_DAYS} 天</div>
+      <div class="arrow ${currentDay>=TOTAL_DAYS?'disabled':''}" onclick="nextDay()">▶</div>
+    </div>
+  `;
+
+  if (currentDay === 10) {
+    html += `
+      <div class="arrival-banner show" style="margin-top:14px;">
+        <span class="icon">🐘</span>
+        <div><div class="title">小象已经到啦！</div><div class="sub">这是它抵达那天写给你的日记。</div></div>
+      </div>`;
+  }
+
+  msgs.forEach((m,i) => {
+    html += `
+      <div class="msg-card" id="msg${i}">
+        <div class="tag-row"><span class="emoji">${m.emoji}</span><span class="label">${m.label}</span><span class="loc">${m.loc}</span></div>
+        <div class="body">${m.body}</div>
+        <div class="sign">${m.sign}</div>
+        ${i<msgs.length-1 ? '<div class="divider"></div>' : ''}
+      </div>`;
+  });
+
+  html += `<div class="hint" id="hint">${currentDay===10 ? '小象已经到了。但你可以随时回来看它。' : '明天这个时候，小象会在路上给你写新的日记。'}</div>`;
+
+  container.innerHTML = html;
+
+  // 交错入场动画
+  setTimeout(() => {
+    msgs.forEach((_,i) => {
+      setTimeout(() => {
+        const el = document.getElementById('msg'+i);
+        if (el) el.classList.add('show');
+        if (i === msgs.length-1) {
+          setTimeout(() => {
+            const hint = document.getElementById('hint');
+            if (hint) hint.classList.add('show');
+          }, 200);
+        }
+      }, 180 * (i+1));
+    });
+  }, 100);
+}
+
+// ============ 导航 ============
+function prevDay() { if (currentDay > 1) { currentDay--; renderHome(); } }
+function nextDay() { if (currentDay < TOTAL_DAYS) { currentDay++; renderHome(); } }
+
+// ============ 地图 ============
+function openMap() {
+  mapOpen = true;
+  document.getElementById('homeScreen').classList.add('hidden');
+  document.getElementById('mapScreen').classList.add('active');
+  const meta = dayMeta[currentDay-1];
+  document.getElementById('mapTitle').innerHTML = `🐘 ${currentDay===10?'旅程完成 · 桂林':'第'+currentDay+'天 · '+meta.dest}`;
+  drawMap();
+}
+
+function closeMap() {
+  mapOpen = false;
+  document.getElementById('homeScreen').classList.remove('hidden');
+  document.getElementById('mapScreen').classList.remove('active');
+}
+
+function drawMap() {
+  const canvas = document.getElementById('mapCanvas');
+  const container = document.getElementById('mapContainer');
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  // 转换路线点到画布坐标
+  const pts = routePoints.map(p => ({x: p.x*W, y: p.y*H, name:p.name}));
+
+  // 绘制未走路线（灰色虚线）
+  if (currentDay < TOTAL_DAYS) {
+    ctx.beginPath();
+    ctx.setLineDash([8, 7]);
+    ctx.strokeStyle = '#bdbdbd';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.moveTo(pts[currentDay].x, pts[currentDay].y);
+    for (let i = currentDay+1; i < pts.length; i++) {
+      ctx.lineTo(pts[i].x, pts[i].y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // 绘制已走路线（橙色实线）
+  ctx.beginPath();
+  ctx.strokeStyle = '#E8A87C';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = 'rgba(232,168,124,.4)';
+  ctx.shadowBlur = 6;
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i <= Math.min(currentDay, TOTAL_DAYS); i++) {
+    ctx.lineTo(pts[i].x, pts[i].y);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // 绘制每日圆点
+  for (let i = 1; i < pts.length; i++) {
+    const passed = i <= currentDay;
+    ctx.beginPath();
+    ctx.arc(pts[i].x, pts[i].y, 5, 0, Math.PI*2);
+    ctx.fillStyle = passed ? '#E8A87C' : '#bdbdbd';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // 起点标记
+  drawMarker(ctx, pts[0].x, pts[0].y, '📍', '南宁', 'right');
+  // 终点标记
+  drawMarker(ctx, pts[10].x, pts[10].y, currentDay===10?'🏁':'🏳️', '桂林', 'left');
+  // 小象标记
+  const elePt = pts[Math.min(currentDay, TOTAL_DAYS)];
+  drawElephant(ctx, elePt.x, elePt.y, dayMeta[currentDay-1].dest, currentDay===10);
+
+  // 更新底部统计
+  const traveledKm = dayMeta.slice(0, currentDay).reduce((s,d)=>s+parseInt(d.dist),0);
+  const remaining = TOTAL_KM - traveledKm;
+  const pct = currentDay / TOTAL_DAYS;
+  document.getElementById('mapTraveled').textContent = traveledKm+'km';
+  document.getElementById('mapRemaining').textContent = remaining+'km';
+  document.getElementById('mapProgressFill').style.width = (pct*100)+'%';
+}
+
+function drawMarker(ctx, x, y, emoji, label, align) {
+  ctx.font = '22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(emoji, x, y-12);
+
+  // 标签背景
+  ctx.font = '10px sans-serif';
+  const tw = ctx.measureText(label).width;
+  const tx = align==='right' ? x - tw - 16 : x + 14;
+  ctx.fillStyle = 'rgba(255,255,255,.9)';
+  ctx.strokeStyle = 'rgba(0,0,0,.06)';
+  ctx.lineWidth = 1;
+  const bw = tw + 12, bh = 18;
+  ctx.beginPath();
+  ctx.roundRect(tx - (align==='right'?0:6), y - 28, bw, bh, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#3C3C3C';
+  ctx.textAlign = align==='right' ? 'right' : 'left';
+  ctx.fillText(label, tx + (align==='right'?tw+6:6), y-16);
+}
+
+function drawElephant(ctx, x, y, label, arrived) {
+  // 呼吸光环
+  const t = Date.now() / 1200;
+  const s = 1 + 0.08 * Math.sin(t * Math.PI);
+  ctx.save();
+  ctx.translate(x, y-42);
+  ctx.scale(s, s);
+
+  ctx.font = '40px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🐘', 0, 0);
+
+  ctx.restore();
+
+  // 地名标签
+  ctx.font = 'bold 11px sans-serif';
+  const tw = ctx.measureText(label).width;
+  ctx.fillStyle = '#E8A87C';
+  ctx.strokeStyle = 'rgba(255,255,255,.9)';
+  ctx.lineWidth = 3;
+  ctx.textAlign = 'center';
+  ctx.strokeText(label, x, y-4);
+  ctx.fillText(label, x, y-4);
+}
+
+// ============ 窗口大小变化重绘地图 ============
+window.addEventListener('resize', () => { if (mapOpen) drawMap(); });
+
+// ============ 键盘导航 ============
+document.addEventListener('keydown', e => {
+  if (mapOpen) { if (e.key === 'Escape') closeMap(); return; }
+  if (e.key === 'ArrowLeft') prevDay();
+  if (e.key === 'ArrowRight') nextDay();
+});
+
+// ============ 启动 ============
+renderHome();
+
+// 地图动画循环（让小象呼吸）
+setInterval(() => { if (mapOpen) drawMap(); }, 100);
+</script>
+
+</body>
+</html>

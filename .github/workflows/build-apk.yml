@@ -1,0 +1,38 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: 安装 Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+          channel: 'stable'
+
+      - name: 安装依赖
+        run: flutter pub get
+
+      - name: 构建 APK (debug)
+        run: flutter build apk --debug
+
+      - name: 上传 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: elephant-journey-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7

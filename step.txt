@@ -1,0 +1,34 @@
+手机运行：
+方式一：同一wifi下，因为文件在本地，iPhone访问不到，如果不在同一网下
+以后每次要跑的时候
+在终端里两步：
+
+cd E:\elephant_journey
+flutter build web
+cd build\web
+npx http-server -p 8090
+然后 iPhone Safari 打开 http://你电脑的IP:8090。
+
+
+方式二：推送到git上
+因为文件现在放在了 GitHub 的服务器上，不是你的电脑上。
+之前（同一 WiFi）：  iPhone → 你家路由器 → 你电脑（192.168.10.5）
+                    你电脑关了，iPhone 就打不开
+现在（任何地方）：    iPhone → 互联网 → GitHub 服务器（24小时在线）
+                    跟你电脑开关机无关
+GitHub Pages 本质上就是 GitHub 给你一个免费的网页托管——你把 HTML 文件推到仓库，他们帮你放在公网服务器上，给一个 github.io 域名，全世界都能访问。
+
+改代码后的完整流程：
+改代码 → flutter build web → 推 build\web 到 GitHub → iPhone 刷新页面
+deploy_web.bat 把后三步合在一起了，下次改完代码直接跑它就行。
+
+deploy_web.bat 帮你做了：
+① flutter build web        ← 把代码编译成网页文件
+② git add -A               ← 打包新文件
+③ git commit -m "..."      ← 写个更新记录
+④ git push                 ← 推送到 GitHub
+然后你 iPhone 上打开 https://danika2027.github.io/elephant-diary 下拉刷新就行。
+
+电脑网页运行：
+cd /d E:\elephant_journey
+flutter run -d chrome
