@@ -11,6 +11,8 @@ import 'models/elephant_profile.dart';
 import 'models/route_info.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/elephant_setup_screen.dart';
+import 'screens/about_journey_screen.dart';
+import 'screens/new_journey_screen.dart';
 import 'screens/map_screen.dart';
 import 'widgets/message_card.dart';
 import 'widgets/skeleton_card.dart';
@@ -772,31 +774,24 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _startNewJourney() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.cardBg,
-        title: const Text('开启新旅程？',
-            style: TextStyle(color: AppTheme.textPrimary)),
-        content: Text(
-          '${_elephantProfile.name}会记住你，但旅程记录会被清空。\n\n确定要重新出发吗？',
-          style: const TextStyle(color: AppTheme.textSecondary),
+    // 获取上一次路线名称
+    final lastRouteId = await _journeyService.getRouteId();
+    final lastRoute =
+        RouteRegistry.find(lastRouteId) ?? RouteRegistry.defaultRoute;
+
+    if (!mounted) return;
+
+    // 显示三选一过渡页
+    final choice = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => NewJourneyScreen(
+          lastRouteName: lastRoute.name,
+          elephantName: _elephantProfile.name,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('不了',
-                style: TextStyle(color: AppTheme.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('重新出发',
-                style: TextStyle(color: AppTheme.primaryWarm)),
-          ),
-        ],
       ),
     );
-    if (confirm != true || !mounted) return;
+
+    if (choice == null || !mounted) return; // 用户取消
 
     await _journeyService.resetJourney();
     Navigator.of(context).pushReplacementNamed('/home');
@@ -928,6 +923,22 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
               ),
               const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => const AboutJourneyScreen()),
+                ),
+                child: Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.textSecondary.withAlpha(25),
+                  ),
+                  child: const Icon(Icons.help_outline,
+                      size: 16, color: AppTheme.textSecondary),
+                ),
+              ),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: () => _showShareSheet(dayData),
                 child: Container(

@@ -238,35 +238,39 @@ class _MapScreenState extends State<MapScreen> {
     return Marker(
       point: point,
       width: 100,
-      height: 50,
+      height: 58,
       alignment: isLabelLeft ? Alignment.centerRight : Alignment.centerLeft,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 26)),
-          const SizedBox(height: 2),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(220),
-              borderRadius: BorderRadius.circular(6),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(20),
-                  blurRadius: 2,
+      child: SizedBox(
+        width: 100,
+        height: 58,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 26)),
+            const SizedBox(height: 2),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(220),
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(20),
+                    blurRadius: 2,
+                  ),
+                ],
+              ),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
                 ),
-              ],
-            ),
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -311,7 +315,7 @@ class _MapScreenState extends State<MapScreen> {
     return Marker(
       point: _elephantPos,
       width: 80,
-      height: 80,
+      height: 85,
       child: GestureDetector(
         onTap: () => _openInteraction(),
         child: _ElephantMarker(
@@ -554,6 +558,7 @@ class _MapScreenState extends State<MapScreen> {
     return SizedBox(
       width: 64,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             value,
@@ -648,25 +653,28 @@ class _ElephantMarkerState extends State<_ElephantMarker>
       builder: (context, child) {
         return Transform.scale(
           scale: _scale.value,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('🐘', style: TextStyle(fontSize: 40)),
-              const SizedBox(height: 2),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryWarm,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryWarm.withAlpha(80),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
+          child: SizedBox(
+            width: 80,
+            height: 85,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('🐘', style: TextStyle(fontSize: 40)),
+                const SizedBox(height: 2),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryWarm,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryWarm.withAlpha(80),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                 child: Text(
                   widget.label,
                   style: const TextStyle(
@@ -678,7 +686,8 @@ class _ElephantMarkerState extends State<_ElephantMarker>
               ),
             ],
           ),
-        );
+        ),
+      );
       },
     );
   }

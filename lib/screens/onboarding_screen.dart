@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../services/journey_service.dart';
 import '../models/route_info.dart';
 import 'elephant_setup_screen.dart';
+import 'safety_agreement_screen.dart';
 
 /// 首次启动引导页
 /// —— 温柔的开场，让用户选择出发日期
@@ -63,6 +65,17 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
     if (!mounted) return;
     setState(() => _saving = true);
+
+    // 心理安全约定（仅首次显示）
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenSafety = prefs.getBool('has_seen_safety_agreement') ?? false;
+    if (!hasSeenSafety) {
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const SafetyAgreementScreen()),
+      );
+      await prefs.setBool('has_seen_safety_agreement', true);
+    }
 
     // 完成引导
     await _journeyService.completeOnboarding();
